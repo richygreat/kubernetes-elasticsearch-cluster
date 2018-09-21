@@ -65,16 +65,16 @@ spec:
             port: transport
           initialDelaySeconds: 20
           periodSeconds: 10
-        readinessProbe:
-          httpGet:
-            path: /_cluster/health
-            port: http
-          initialDelaySeconds: 20
-          timeoutSeconds: 5
         volumeMounts:
-        - name: storage
+        - name: es-persistent-storage
           mountPath: /data
-      volumes:
-          - emptyDir:
-              medium: ""
-            name: storage
+  volumeClaimTemplates:
+  - metadata:
+      name: es-persistent-storage
+      annotations:
+        volume.beta.kubernetes.io/storage-class: "default"
+    spec:
+      accessModes: [ "ReadWriteOnce" ]
+      resources:
+        requests:
+          storage: 20Gi
