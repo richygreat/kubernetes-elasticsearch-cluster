@@ -5,6 +5,7 @@ metadata:
   labels:
     component: kibana
 spec:
+  type: NodePort
   selector:
     component: kibana
   ports:
