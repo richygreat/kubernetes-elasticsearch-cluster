@@ -76,7 +76,7 @@ spec:
             port: transport
           initialDelaySeconds: 20
           periodSeconds: 10
-        volumeMounts:
+        volumes:
         - name: es-persistent-storage
           persistentVolumeClaim:
-          claimName: es-vol
+            claimName: es-vol
