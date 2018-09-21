@@ -26,6 +26,8 @@ spec:
       - name: es-master
         image: quay.io/pires/docker-elasticsearch-kubernetes:6.3.2
         env:
+        - name: "NETWORK_HOST"
+          value: "_eth0_"
         - name: NAMESPACE
           valueFrom:
             fieldRef:
