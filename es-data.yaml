@@ -1,3 +1,14 @@
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: es-vol
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 20Gi
+---
 apiVersion: apps/v1beta1
 kind: Deployment
 metadata:
@@ -67,14 +78,5 @@ spec:
           periodSeconds: 10
         volumeMounts:
         - name: es-persistent-storage
-          mountPath: /data
-  volumeClaimTemplates:
-  - metadata:
-      name: es-persistent-storage
-      annotations:
-        volume.beta.kubernetes.io/storage-class: "default"
-    spec:
-      accessModes: [ "ReadWriteOnce" ]
-      resources:
-        requests:
-          storage: 20Gi
+          persistentVolumeClaim:
+          claimName: es-vol
