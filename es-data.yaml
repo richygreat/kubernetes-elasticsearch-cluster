@@ -1,34 +1,49 @@
 apiVersion: apps/v1beta1
-kind: Deployment
+kind: StatefulSet
 metadata:
   name: es-data
+  namespace: kube-system
   labels:
-    component: elasticsearch
-    role: data
+    k8s-addon: logging-elasticsearch.addons.k8s.io
+    k8s-app: es-data
+    version: v1
+    kubernetes.io/cluster-service: "true"
 spec:
-  replicas: 2
+  serviceName: es-data
+  replicas: 1
   template:
     metadata:
       labels:
-        component: elasticsearch
-        role: data
+        k8s-app: es-data
+        version: v1
+        kubernetes.io/cluster-service: "true"
     spec:
-      initContainers:
-      - name: init-sysctl
-        image: busybox:1.27.2
-        command:
-        - sysctl
-        - -w
-        - vm.max_map_count=262144
-        securityContext:
-          privileged: true
+      serviceAccountName: es-data
       containers:
-      - name: es-data
-        image: quay.io/pires/docker-elasticsearch-kubernetes:6.3.2
+      - image: k8s.gcr.io/elasticsearch:v5.6.4
+        name: es-data
+        resources:
+          # need more cpu upon initialization, therefore burstable class
+          limits:
+            cpu: 1000m
+          requests:
+            cpu: 100m
+        ports:
+        - containerPort: 9200
+          name: http
+          protocol: TCP
+        - containerPort: 9300
+          name: transport
+          protocol: TCP
+        volumeMounts:
+        - name: es-persistent-storage
+          mountPath: /data
         env:
         - name: "NETWORK_HOST"
           value: "_eth0_"
-        - name: NAMESPACE
+        - name: "ES_JAVA_OPTS"
+          value: "-Xms256m -Xmx256m"
+        - name: "NAMESPACE"
           valueFrom:
             fieldRef:
               fieldPath: metadata.namespace
@@ -44,31 +59,13 @@ spec:
           value: "false"
         - name: HTTP_ENABLE
           value: "true"
-        - name: ES_JAVA_OPTS
-          value: -Xms512m -Xmx512m
-        - name: PROCESSORS
-          valueFrom:
-            resourceFieldRef:
-              resource: limits.cpu
-        resources:
-          requests:
-            cpu: 0.25
-          limits:
-            cpu: 1
-        ports:
-        - containerPort: 9200
-          name: http
-        - containerPort: 9300
-          name: transport
-        livenessProbe:
-          tcpSocket:
-            port: transport
-          initialDelaySeconds: 20
-          periodSeconds: 10
-        volumeMounts:
-        - name: storage
-          mountPath: /data
-      volumes:
-      - name: storage
-        emptyDir:
-          medium: ""
+  volumeClaimTemplates:
+  - metadata:
+      name: es-persistent-storage
+      annotations:
+        volume.beta.kubernetes.io/storage-class: "default"
+    spec:
+      accessModes: [ "ReadWriteOnce" ]
+      resources:
+        requests:
+          storage: 20Gi
